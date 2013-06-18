@@ -1,5 +1,4 @@
 from setuptools import setup
-import corrections
 
 
 def long_desc():
@@ -8,7 +7,7 @@ def long_desc():
 
 kw = {
     "name": "corrections",
-    "version": corrections.__version__,
+    "version": "0.1.0",
     "description": '',
     "long_description": long_desc(),
     "url": "https://github.com/plausibility/corrections",
