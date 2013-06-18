@@ -41,8 +41,7 @@ class Correct(object):
     def _produce(self):
         while True:
             if not self.queue.empty():
-                print "Not empty!", self.queue.qsize()
-                gevent.sleep(1)
+                gevent.sleep(0)
                 continue
             self._add_work(10)
             gevent.sleep(0)
@@ -50,7 +49,6 @@ class Correct(object):
     def do_loop(self):
         while True:
             if self.queue.empty():
-                print "Lel empty!!"
                 gevent.sleep(0)
             task = self.queue.get()
             r = requests.get('http://httpbin.org/get', params={"task": task})
