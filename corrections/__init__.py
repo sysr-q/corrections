@@ -8,8 +8,6 @@ import twitter
 from threading import Thread
 import time
 
-# debuggerin
-import requests
 
 # change here, change in setup.py
 __version__ = "0.1.0"
@@ -132,7 +130,7 @@ class Correct(object):
             self._next_tweet = time.time() + self._cooldown_tweet
     __call__ = do_loop
 
-    def _kill(self):
+    def kill(self):
         # Good enough? Sure.
         self.producer.kill()
 
