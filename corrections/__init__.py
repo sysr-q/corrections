@@ -7,20 +7,26 @@ from gevent.queue import Queue
 import twitter
 from threading import Thread
 import time
+import re
 
 
 # change here, change in setup.py
-__version__ = "0.1.0"
+__version__ = "0.2.0"
+
+class CorrectionsException(Exception):
+    pass
 
 
 class Correct(object):
-    def __init__(self,
-                 auth,
-                 phrases=None,
-                 cooldown=(30, 10),
-                 force_fetch=False,
-                 max_queue=250,
-                 reply_to_rt=False):
+    auth = None
+    phrases = None
+    cooldown = (60, 60 * 3)  # 1 min / 3 min respectively
+    force_fetch = False
+    max_queue = 250
+    reply_to_rt = False
+    ignore_display_names = True
+
+    def __init__(self):
         """ Create a new correctional bot, with a Twitter instance ready.
 
             :auth: a tuple/list with the information from Twitter:
@@ -34,22 +40,21 @@ class Correct(object):
             :reply_to_rt: should we bother replying to retweets? Sometimes
                 this is useless, sometimes it's alright. Take your pick.
         """
-        self.t = twitter.Twitter(auth=twitter.OAuth(*auth))
+        if self.auth is None:
+            raise CorrectionsException("No auth given.")
+        self.t = twitter.Twitter(auth=twitter.OAuth(*self.auth))
         try:
             # List, tuple, etc.
-            iterator = iter(phrases)
+            iterator = iter(self.phrases)
         except TypeError:
             # String, int, whatever.
-            self.phrases = [phrases]
+            self.phrases = [self.phrases]
         else:
             # Whoo, iterable!
-            self.phrases = phrases
+            pass
         # We're going to want strings anyway, so..
         self.phrases = map(str, self.phrases)
-        self._cooldown_fetch, self._cooldown_tweet = cooldown
-        self.force_fetch = force_fetch
-        self.max_queue = max_queue
-        self.reply_to_rt = reply_to_rt
+        self._cooldown_fetch, self._cooldown_tweet = self.cooldown
 
         self.queue = Queue()
         self.producer = None
@@ -58,6 +63,7 @@ class Correct(object):
         self._next_tweet = time.time()
         self.account_settings = self.t.account.settings()
         self.display_name = self.account_settings['screen_name']
+        self._disp_re = re.compile(r'@[^\s]*alot[^\s]*', flags=re.I)
 
     def _in_reply_to_us(self, tweet):
         if 'in_reply_to_screen_name' not in tweet:
@@ -80,6 +86,9 @@ class Correct(object):
             return False
         return 'retweeted_status' in tweet
 
+    def _is_display_name(self, tweet):
+        return not bool(self._disp_re.findall(tweet['text']))
+
     def _fetch_tweets(self):
         tweets = self.t.search.tweets(q=" OR ".join(self.phrases), lang="en")
         for t in tweets['statuses']:
@@ -91,6 +100,8 @@ class Correct(object):
             if self._from_us(t):
                 continue
             if self._is_retweet(t):
+                continue
+            if not self.ignore_display_names and self._is_display_name(t):
                 continue
             if t['id'] in self.seen:
                 continue
@@ -123,9 +134,10 @@ class Correct(object):
                 gevent.sleep(0)
                 continue
             task = self.queue.get()
-            print u"Should be replying to: {0} (from @{1})".format(
+            print u"freply: {0} (from @{1}) with: {2}".format(
                 task['text'],
-                task['user']['screen_name']
+                task['user']['screen_name'],
+                self.reply(task['text'], task['user']['screen_name'])
             )  # /debug
             self._next_tweet = time.time() + self._cooldown_tweet
     __call__ = do_loop
