@@ -7,7 +7,7 @@ def long_desc():
 
 kw = {
     "name": "corrections",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "description": '',
     "long_description": long_desc(),
     "url": "https://github.com/plausibility/corrections",

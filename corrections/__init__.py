@@ -11,7 +11,7 @@ import re
 
 
 # change here, change in setup.py
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 class CorrectionsException(Exception):
     pass
@@ -135,7 +135,7 @@ class Correct(object):
                 continue
             task = self.queue.get()
             reply = self.reply(task['text'], task['user']['screen_name'])
-            self.t.statuses.update(status=reply)
+            self.t.statuses.update(status=reply, in_reply_to_status_id=task['id'])
             self._next_tweet = time.time() + self._cooldown_tweet
     __call__ = do_loop
 
