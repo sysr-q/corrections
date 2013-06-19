@@ -21,7 +21,6 @@ Here's my favourite use of the Corrections bot (and why I actually wrote this): 
                 CONSUMER_KEY,
                 CONSUMER_SECRET)
         phrases = ["alot"]
-        force_fetch = True
         cooldown = (60 * 5, 60 * 3)
 
         def reply(self, phrase, user):
