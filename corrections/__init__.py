@@ -18,6 +18,25 @@ class CorrectionsException(Exception):
 
 
 class Correct(object):
+    """ Is it a bird? Is it a plane? No, it's the Corrections twitter bot.
+        How irritating.
+
+        auth - a tuple/list with the information from the Twitter dev site:
+            (OAUTH_TOKEN, OAUTH_SECRET, CONSUMER_KEY, CONSUMER_SECRET)
+        phrases - an iterable (or string) of phrases to search for
+        cooldown - how long to wait (in seconds) between searching for new
+            tweets and sending off tweets, as a tuple. e.g. (60, 30)
+        force_fetch - should we fetch new tweets, even if we haven't
+            exhausted our current tweet queue?
+        max_queue - how many tweets should we store in our queue before
+            we just stop caring?
+        reply_to_rt - should we bother replying to retweets? Sometimes
+            this is useless, sometimes it's alright. Take your pick.
+        ignore_display_names - should we correct people that have the
+            type in their @display_name?
+        dry - do everything but don't actually send the tweets
+
+    """
     auth = None
     phrases = None
     cooldown = (60, 60 * 3)  # 1 min / 3 min respectively
@@ -28,19 +47,6 @@ class Correct(object):
     dry = False
 
     def __init__(self):
-        """ Create a new correctional bot, with a Twitter instance ready.
-
-            :auth: a tuple/list with the information from Twitter:
-                (OAUTH_TOKEN, OUTH_SECRET, CONSUMER_KEY, CONSUMER_SECRET)
-            :phrases: an iterable (or string) of phrases to search for.
-            :cooldown: how long to wait in seconds between searching for
-                new tweets, and sending off tweets; as a tuple, like (20, 30)
-            :force_fetch: should we fetch new tweets, even if we haven't
-                fully drained our tweet queue?
-            :max_queue: when should we stop caring about new tweets?
-            :reply_to_rt: should we bother replying to retweets? Sometimes
-                this is useless, sometimes it's alright. Take your pick.
-        """
         if self.auth is None:
             raise CorrectionsException("No auth given.")
         self.t = twitter.Twitter(auth=twitter.OAuth(*self.auth))
