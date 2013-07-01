@@ -11,7 +11,7 @@ import re
 
 
 # change here, change in setup.py
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 class CorrectionsException(Exception):
     pass
@@ -25,6 +25,7 @@ class Correct(object):
     max_queue = 250
     reply_to_rt = False
     ignore_display_names = True
+    dry = False
 
     def __init__(self):
         """ Create a new correctional bot, with a Twitter instance ready.
@@ -49,11 +50,8 @@ class Correct(object):
         except TypeError:
             # String, int, whatever.
             self.phrases = [self.phrases]
-        else:
-            # Whoo, iterable!
-            pass
         # We're going to want strings anyway, so..
-        self.phrases = map(str, self.phrases)
+        self.phrases = [str(p) for p in self.phrases]
         self._cooldown_fetch, self._cooldown_tweet = self.cooldown
 
         self.queue = Queue()
@@ -63,7 +61,6 @@ class Correct(object):
         self._next_tweet = time.time()
         self.account_settings = self.t.account.settings()
         self.display_name = self.account_settings['screen_name']
-        self._disp_re = re.compile(r'@[^\s]*alot[^\s]*', flags=re.I)
 
     def _in_reply_to_us(self, tweet):
         if 'in_reply_to_screen_name' not in tweet:
@@ -87,7 +84,10 @@ class Correct(object):
         return 'retweeted_status' in tweet
 
     def _is_display_name(self, tweet):
-        return not bool(self._disp_re.findall(tweet['text']))
+        for p in self.phrases:
+            if re.findall(r'@[^\s]*{0}[^\s]*'.format(p), flags=re.I):
+                return True
+        return False
 
     def _fetch_tweets(self):
         tweets = self.t.search.tweets(q=" OR ".join(self.phrases), lang="en")
@@ -124,6 +124,11 @@ class Correct(object):
             self._fetch_tweets()
             gevent.sleep(0)
 
+    def take_action(self, tweet, username, tid):
+        reply = self.reply(tweet, username)
+        if not self.dry:
+            self.t.statuses.update(status=reply, in_reply_to_status_id=tid)
+
     def do_loop(self):
         # Actually start our produce loop.
         self.producer = gevent.spawn(self._produce)
@@ -134,8 +139,7 @@ class Correct(object):
                 gevent.sleep(0)
                 continue
             task = self.queue.get()
-            reply = self.reply(task['text'], task['user']['screen_name'])
-            self.t.statuses.update(status=reply, in_reply_to_status_id=task['id'])
+            self.take_action(task['text'], task['user']['screen_name'], task['id'])
             self._next_tweet = time.time() + self._cooldown_tweet
     __call__ = do_loop
 

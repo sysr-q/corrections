@@ -36,3 +36,22 @@ Here's my favourite use of the Corrections bot (and why I actually wrote this): 
     if __name__ == "__main__":
         correct = Alot()
         correct()
+
+Just for testing
+----------------
+Want to make sure your bot is functional but don't want to start spamming tweets yet?
+Easy! Set `dry = True` in your Corrections class and Corrections won't actually update your status.
+
+.. code-block:: python
+
+    class Alot(Correct):
+        auth = (OAUTH_TOKEN,
+                OAUTH_SECRET,
+                CONSUMER_KEY,
+                CONSUMER_SECRET)
+        phrases = [...]
+        cooldown = (...)
+        dry = True
+
+        def reply(...):
+            # ...
